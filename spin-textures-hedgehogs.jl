@@ -269,17 +269,11 @@ end
 function writeSpinTexturePolar(p)
 
     (; Nₛ, m, phi) = p
+    (; cut, Nr, Nt, rs, elev, azim, arrowRatio, arrowWidth, arrowLength) = pf
     # idx(i, j, k) = 3Nₛ * (i - 1) + 3(j - 1) .+ (k)
 
-    nor = sqrt(16pi^2 / 3)
-
-    # r = [i, j]
-    # ra = 1.65
     a1 = 2pi .* [1.0, 1 / sqrt(3)]
-    ra = 1.0
-    cut = 1.0
-    Nr = 13
-    f = 5
+    f = Nt
 
     ps = [Point3f(rPolar(r, theta, Nr)[1], rPolar(r, theta, Nr)[2], 0.0) for r ∈ 1:Nr÷2 for theta ∈ range(0, 2pi, length=f * r)] ./ norm(a1) # .* ra / 2 ./ Nₛ
     append!(ps, [Point3f(rPolar(r, theta, Nr)[1], rPolar(r, theta, Nr)[2], 0.0) for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(0, 2pi, length=f * (Nr - r))] ./ norm(a1)) # .* ra / 2 ./ Nₛ)
@@ -301,22 +295,11 @@ function writeSpinTexturePolar(p)
     # append!(ns, [Vec3f(SPolar(rPolar(r / ra, theta), m, phi)) for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(pi, 2pi, length=3(Nr - r))] .* 0.6 ./ Nₛ)
     # append!(ns, [Vec3f(SPolar(rPolar(0, 0), m, phi)), Vec3f(SPolar(rPolar(Nr, 0), m, phi))] .* 0.6 ./ Nₛ)
 
-    r = 0.85
     θ = range(0.0, pi, length=100)
     φ = range(0.0, 2pi, length=100)
-    x = [r * sin(θ) * cos(φ) for θ in θ, φ in φ]
-    y = [r * sin(θ) * sin(φ) for θ in θ, φ in φ]
-    z = [r * cos(θ) for θ in θ, φ in φ]
-
-    # r = range(-1.0, 1.0, length=100)
-    # cube = [(x .^ 2 + y .^ 2 + z .^ 2) for x = r, y = r, z = r]
-    # cube = cube .* (cube .> 1.0)
-    # # cube = cube[norm.(cube).<1.0]
-    # display(cube)
-
-    # x = [r(i, j)[1] for i ∈ 1:Nₛ for j ∈ 1:Nₛ] ./ (nor*Nₛ)
-    # y = [r(i, j)[2] for i ∈ 1:Nₛ for j ∈ 1:Nₛ] ./ (nor*Nₛ)
-    # z = [df[1, idx(i, j, 3)+1] for i ∈ 1:Nₛ, for j ∈ 1:Nₛ]
+    x = [rs * sin(θ) * cos(φ) for θ in θ, φ in φ]
+    y = [rs * sin(θ) * sin(φ) for θ in θ, φ in φ]
+    z = [rs * cos(θ) for θ in θ, φ in φ]
 
     fig = Figure(resolution=(600 * 2, 600 * 2))
     ax = Axis3(fig[1, 1],
@@ -330,28 +313,13 @@ function writeSpinTexturePolar(p)
         # limits=(0, 1.0, 0, 1.0, 0, 0.8),
         # elevation=π / 2,
         # elevation=π / 6,
-        elevation=π / 20,
+        elevation=elev,
         # elevation=0,
         # azimuth=0,
         # azimuth=π / 6,
-        azimuth=π / 2,
+        azimuth=azim,
         # xypanelcolor=(:gray, 0.2)
     )
-
-    # ratio = 5
-
-    # lengths = [SPolar(rPolar(r / ra, theta), m, phi)[3] for r ∈ 1:Nr÷2 for theta ∈ range(pi, 2pi, length=3r)]# ./ 2
-    # append!(lengths, [SPolar(rPolar(r / ra, theta), m, phi)[3] for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(pi, 2pi, length=3(Nr - r))])
-    # # append!(lengths, [1.0, -1.0])
-    # append!(lengths, [SPolar(rPolar(0, 0), m, phi)[3], SPolar(rPolar(Nr, 0), m, phi)[3]])
-    # ar = arrows!(
-    #     ax, sphere_points[norm.(ps).<cut], 4ns[norm.(ps).<cut], fxaa=true, # turn on anti-aliasing
-    #     color=lengths[norm.(ps).<cut],
-    #     colormap=:lightrainbow,
-    #     linewidth=0.5 / Nₛ, arrowsize=Vec3f(0.4ratio, 0.4ratio, 0.6ratio) ./ Nₛ,
-    #     align=:center,
-    #     quality=128
-    # )
 
     lengths = [S([i / 128, j / 128], m, phi)[3] for i ∈ -32Nₛ:32Nₛ for j ∈ -32Nₛ:32Nₛ]# ./ 2
     # lengths[sqrt.(x .^ 2 .+ y .^ 2).>cut] .= -2
@@ -364,29 +332,16 @@ function writeSpinTexturePolar(p)
         # lowclip=:white,
         # interpolate=true
     )
-    # volume!(ax, cube)
-
-    # ps = [Point3f(rPolar(r, theta)[1], rPolar(r, theta)[2], 0.0) for r ∈ 1:Nr÷2 for theta ∈ range(0.0, pi, length=3r)] .* ra / 2 ./ Nₛ
-    # append!(ps, [Point3f(rPolar(r, theta)[1], rPolar(r, theta)[2], 0.0) for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(0.0, pi, length=3(Nr - r))] .* ra / 2 ./ Nₛ)
-
-    # append!(ps, [Point3f(rPolar(0, 0)[1], rPolar(0, 0)[2], 0.0), Point3f(rPolar(Nr, 0)[1], rPolar(Nr, 0)[2], 0.0) * ra / 2 / Nₛ])
-    # sphere_points = map_to_sphere(ps)
-
-    # ns = [Vec3f(SPolar(rPolar(r / ra, theta), m, phi)) for r ∈ 1:Nr÷2 for theta ∈ range(0.0, pi, length=3r)] .* 0.6 ./ Nₛ
-    # append!(ns, [Vec3f(SPolar(rPolar(r / ra, theta), m, phi)) for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(0.0, pi, length=3(Nr - r))] .* 0.6 ./ Nₛ)
-    # append!(ns, [Vec3f(SPolar(rPolar(0, 0), m, phi)), Vec3f(SPolar(rPolar(Nr, 0), m, phi))] .* 0.6 ./ Nₛ)
-
-    ratio = 6
 
     lengths = [SPolar(rPolar(r, theta, Nr), m, phi)[3] for r ∈ 1:Nr÷2 for theta ∈ range(0.0, 2pi, length=f * r)]# ./ 2
     append!(lengths, [SPolar(rPolar(r, theta, Nr), m, phi)[3] for r ∈ Nr÷2+1:Nr-1 for theta ∈ range(0.0, 2pi, length=f * (Nr - r))])
     # append!(lengths, [1.0, -1.0])
     append!(lengths, [SPolar(rPolar(0, 0, Nr), m, phi)[3], SPolar(rPolar(Nr, 0, Nr), m, phi)[3]])
     ar = arrows!(
-        ax, sphere_points[norm.(ps).<cut], 6ns[norm.(ps).<cut], fxaa=true, # turn on anti-aliasing
+        ax, sphere_points[norm.(ps).<cut], arrowLength .* ns[norm.(ps).<cut], fxaa=true, # turn on anti-aliasing
         color=lengths[norm.(ps).<cut],
         colormap=:jet1,
-        linewidth=1.0 / Nₛ, arrowsize=Vec3f(0.4ratio, 0.4ratio, 0.6ratio) ./ Nₛ,
+        linewidth=arrowWidth / Nₛ, arrowsize=Vec3f(0.4arrowRatio, 0.4arrowRatio, 0.6arrowRatio) ./ Nₛ,
         align=:center,
         quality=128
     )

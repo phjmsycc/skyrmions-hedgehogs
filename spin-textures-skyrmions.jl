@@ -1,7 +1,7 @@
 # using CairoMakie
 using GLMakie
 using LinearAlgebra
-using Makie.GeometryBasics
+# using Makie.GeometryBasics
 
 function r(i, j)
     q = 1.0
@@ -211,26 +211,27 @@ end
 
 function writeSpinTexturePolar(p)
 
-    (; Nₛ, m, phi, theta0) = p
+    (; Nₛ, m, phi, theta0, pf) = p
+    (; cut, Nr, Nt, elev, azim, arrowRatio, arrowWidth, arrowLength) = pf
     # idx(i, j, k) = 3Nₛ * (i - 1) + 3(j - 1) .+ (k)
 
-    nor = sqrt(16pi^2 / 3)
+    # nor = sqrt(16pi^2 / 3)
 
 
     a1 = 2pi .* [1.0, 1 / sqrt(3)]
     # r = [i, j]
     # ra = 1.8625
-    ra = 2.0
-    cut = 0.52
-    Nr = 11
+    # ra = 2.0
+    # cut = 0.52
+    # Nr = 11
 
-    ps = [Point3f(rPolar(r, theta, Nr)[1], rPolar(r, theta, Nr)[2], 0.0) for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=5r)] ./ norm(a1) # ./ Nₛ
+    ps = [Point3f(rPolar(r, theta, Nr)[1], rPolar(r, theta, Nr)[2], 0.0) for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=Nt * r)] ./ norm(a1) # ./ Nₛ
     # ps = [Point3f(i, j, 0) for i ∈ 1:Nₛ for j ∈ 1:Nₛ] ./ Nₛ
     # append!(ps, [Point3f(0, 0, -10), Point3f(0, 0, -10)])
     # append!(ps, [Point3f(10.0, 10.0, -10.0), Point3f(10.0, 10.0, -10.0)])
     append!(ps, [Point3f(rPolar(0, 0, Nr)[1], rPolar(0, 0, Nr)[2], 0.0)])
     # ns = [Vec3f(S(i/10, j/10, m, phi)) for i ∈ 1:Nₛ for j ∈ 1:Nₛ] ./ Nₛ
-    ns = [Vec3f(SPolar(rPolar(r, theta, Nr), m, phi, theta0)) for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=5r)] .* 0.6 ./ Nₛ
+    ns = [Vec3f(SPolar(rPolar(r, theta, Nr), m, phi, theta0)) for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=Nt * r)] .* 0.6 ./ Nₛ
     # append!(ns, [Vec3f(0.0, 0.0, 1 / (2Nₛ)), Vec3f(0.0, 0.0, -1 / (2Nₛ))])
     append!(ns, [Vec3f(SPolar(rPolar(0, 0, Nr), m, phi, theta0))] .* 0.6 ./ Nₛ)
 
@@ -253,10 +254,10 @@ function writeSpinTexturePolar(p)
         # viewmode=:stretch,
         limits=(-0.5 - 2 / Nₛ, 0.5 + 2 / Nₛ, -0.5 - 2 / Nₛ, 0.5 + 2 / Nₛ, 0, 0.8),
         # limits=(0, 1.0, 0, 1.0, 0, 0.8),
-        elevation=π / 2,
+        elevation=elev,
         # elevation=π / 8,
         # azimuth=0,
-        azimuth=π / 6
+        azimuth=azim
         # xypanelcolor=(:gray, 0.2)
     )
 
@@ -286,18 +287,17 @@ function writeSpinTexturePolar(p)
         strokewidth=0,
         transparency=true
     )
-    ratio = 0.8
 
-    lengths = [SPolar(rPolar(r, theta, Nr), m, phi, theta0)[3] for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=5r)] # ./ 2
+    lengths = [SPolar(rPolar(r, theta, Nr), m, phi, theta0)[3] for r ∈ 1:Nr for theta ∈ range(0.0, 2pi, length=Nt * r)] # ./ 2
     # append!(lengths, [1.0, -1.0])
     append!(lengths, [SPolar(rPolar(0, 0, Nr), m, phi, theta0)[3]])
     ar = arrows!(
         # ax, ps[norm.(ps).<cut], ns[norm.(ps).<cut], fxaa=true, # turn on anti-aliasing
         # color=lengths[norm.(ps).<cut],
-        ax, ps, ns ./ 1, fxaa=true, # turn on anti-aliasing
+        ax, ps, arrowLength .* ns, fxaa=true, # turn on anti-aliasing
         color=lengths,
         colormap=:jet1,
-        linewidth=0.13 / Nₛ, arrowsize=Vec3f(0.4ratio, 0.4ratio, 0.6ratio) ./ Nₛ,
+        linewidth=arrowWidth / Nₛ, arrowsize=Vec3f(0.4arrowRatio, 0.4arrowRatio, 0.6arrowRatio) ./ Nₛ,
         align=:center,
         quality=128
     )
